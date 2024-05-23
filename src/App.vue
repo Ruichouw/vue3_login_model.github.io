@@ -3,7 +3,6 @@
 <template>
   <div>
     <router-view></router-view>
-    <el-button>测试</el-button>
   </div>
 </template>
 

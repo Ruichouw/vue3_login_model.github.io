@@ -3,7 +3,7 @@ import axios from 'axios'
 import router from '@/router'
 // import { ElMessage } from 'element-plus'
 
-const baseURL = 'http://pcapi-xiaotuxian-front-devtest.itheima.net'
+const baseURL = 'https://api.longfish.site'
 
 const instance = axios.create({
   baseURL,
@@ -24,10 +24,11 @@ instance.interceptors.request.use(
 
 instance.interceptors.response.use(
   (res) => {
-    if (res.data.code === '1') {
+    if (res.data.code === 200) {
       return res
     }
     ElMessage({ message: res.data.msg || '服务异常', type: 'error' })
+
     return Promise.reject(res.data)
   },
   (err) => {

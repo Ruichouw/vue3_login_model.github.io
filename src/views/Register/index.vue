@@ -1,22 +1,17 @@
 <script setup>
 import { ref } from 'vue'
-// 引入路由对象用于跳转，引入用户信息的仓库用于发送登录请求
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores'
-import { codeAPI, lambdaCodeLoginAPI } from '@/api/user'
+import { codeAPI, lambdaRegisterAPI } from '@/api/user'
 import { ElMessage } from 'element-plus'
-const userStore = useUserStore()
+import { useRouter } from 'vue-router'
 const router = useRouter()
+
 // 利用v-if进行登录切换，showLogin是控制显示的变量
-const showLogin = ref(true)
 const formModel = ref({
   username: '',
+  emailOrPhone: '',
   password: '',
-  code: '',
-  phone: ''
+  code: ''
 })
-// 用ref获取from对象，来将form收集到的值传给登录接口
-const formRef = ref(null)
 // 预校验
 // 规则rule,表单数据绑定formModel,规则绑定prop,v-model双向绑定
 const checkPhone = (rule, value, callback) => {
@@ -49,7 +44,7 @@ const rules = {
       trigger: 'blur'
     }
   ],
-  phone: [
+  emailOrPhone: [
     { required: true, message: '请输入手机号/邮箱号', trigger: 'blur' },
     { validator: checkPhone, trigger: 'blur' }
   ],
@@ -59,19 +54,23 @@ const rules = {
     { min: 6, max: 6, message: '验证码必须是6位的字符', trigger: 'blur' }
   ]
 }
+
 // 发送验证码
 // 计时器，两个变量：总秒数，当前秒数；点击，计时器开始，变量不等，开始倒计时，
 // 到0时将插值变成重新发送
 const totalSecond = ref(10)
 const second = ref(10)
 const timer = ref(null)
+
 const getCode = async () => {
+  console.log(formModel.value.emailOrPhone)
   console.log(111)
   if (!timer.value && second.value === totalSecond.value) {
+    console.log(formModel.value.emailOrPhone)
+    await codeAPI(formModel.value.emailOrPhone)
     //开启倒计时
-    await codeAPI(formModel.value.phone)
-    console.log(222)
     ElMessage.success('验证码发送成功')
+    console.log(222)
     console.log(second.value)
     timer.value = setInterval(
       () => {
@@ -87,33 +86,17 @@ const getCode = async () => {
     )
   }
 }
-
-// 点击登录逻辑
-const onLogin = () => {
-  formRef.value.validate(async (valid) => {
-    // valid:  表示所有表单校验通过，返回true
-    formModel.value.username =
-      formModel.value.phone === ''
-        ? formModel.value.username
-        : formModel.value.phone
-    if (valid) {
-      console.log(formModel.value)
-      if (formModel.value.phone === '') {
-        await userStore.LoginLam(formModel.value)
-      } else {
-        await lambdaCodeLoginAPI(formModel.value)
-      }
-      ElMessage.success('登录成功')
-      router.replace('/')
-    }
-  })
+// 点击注册
+const onRegister = async () => {
+  console.log(formModel.value)
+  await lambdaRegisterAPI(formModel.value)
+  ElMessage.success('注册成功')
+  router.push('/login')
 }
 </script>
-
 <template>
   <div class="logincontent">
     <section class="login-section">
-      <!-- 左侧项目介绍页 -->
       <div class="left flexCenter" style="color: #fff">
         <div class="left-contain">
           <h1>ocra</h1>
@@ -125,89 +108,41 @@ const onLogin = () => {
           >
         </div>
       </div>
-      <!-- 左侧项目介绍页 -->
-      <!-- 右侧表单页 -->
       <div class="right">
         <div class="form-content">
-          <!-- 密码登录页表单 -->
-          <el-form
-            class="flexpf"
-            v-if="showLogin"
-            :model="formModel"
-            :rules="rules"
-            ref="formRef"
-          >
-            <div class="form-top">
-              <span style="font-weight: 700">登录</span>
-              <span
-                style="font-size: 12px; text-align: center; line-height: 37px"
-                >没有账号？<a
-                  href="javascript:;"
-                  @click="$router.push('/register')"
-                  >点此注册</a
-                >
-              </span>
-            </div>
+          <el-form class="flexpf" :model="formModel" :rules="rules">
+            <el-form-item>
+              <div class="form-top">
+                <span style="font-weight: 700">注册</span>
+                <span
+                  style="font-size: 12px; text-align: center; line-height: 37px"
+                  >已有账号？<a
+                    href="javascript:;"
+                    @click="$router.push('login')"
+                    >点此登录</a
+                  >
+                </span>
+              </div>
+            </el-form-item>
+
             <el-form-item prop="username">
               <el-input
-                placeholder="请输入用户名"
                 v-model="formModel.username"
+                placeholder="请输入用户名"
+              />
+            </el-form-item>
+            <el-form-item prop="emailOrPhone">
+              <!-- 请输入手机号 -->
+              <el-input
+                v-model="formModel.emailOrPhone"
+                placeholder="请输入手机号"
               />
             </el-form-item>
             <el-form-item prop="password">
               <el-input v-model="formModel.password" placeholder="请输入密码" />
             </el-form-item>
-            <el-form-item>
-              <div class="flex">
-                <el-checkbox>记住我</el-checkbox>
-                <el-link
-                  type="primary"
-                  :underline="false"
-                  @click="showLogin = false"
-                  >短信验证登录</el-link
-                >
-              </div>
-            </el-form-item>
-            <el-form-item>
-              <el-button
-                style="width: 100%; background-color: #26beff; color: #fff"
-                @click="onLogin"
-                >登录</el-button
-              >
-            </el-form-item>
-            <el-form-item>
-              <el-link
-                @click="$router.push('/password')"
-                type="primary"
-                :underline="false"
-                style="margin: 0 auto"
-                >已有账号，忘记密码？</el-link
-              >
-            </el-form-item>
-          </el-form>
-          <!-- 密码登录页表单 -->
-          <!-- 验证码登录页表单 -->
-          <el-form
-            class="flexpf"
-            v-else
-            :model="formModel"
-            :rules="rules"
-            ref="formRef"
-          >
-            <div class="form-top">
-              <span>登录</span>
-              <span
-                style="font-size: 12px; text-align: center; line-height: 37px"
-                >没有账号？<a
-                  href="javascript:;"
-                  @click="$router.push('/register')"
-                  >点此注册</a
-                >
-              </span>
-            </div>
-            <el-form-item prop="phone">
-              <el-input placeholder="请输入手机号" v-model="formModel.phone" />
-            </el-form-item>
+
+            <!-- 验证码 -->
             <el-form-item prop="code">
               <el-input v-model="formModel.code" placeholder="请输入验证码">
                 <template #append>
@@ -225,48 +160,27 @@ const onLogin = () => {
               </el-input>
             </el-form-item>
             <el-form-item>
-              <div class="flex">
-                <el-checkbox>记住我</el-checkbox>
-                <el-link
-                  type="primary"
-                  :underline="false"
-                  @click="showLogin = true"
-                  >用户密码登录
-                </el-link>
-              </div>
-            </el-form-item>
-            <el-form-item>
               <el-button
                 style="width: 100%; background-color: #26beff; color: #fff"
-                @click="onLogin"
-                >登录</el-button
-              >
-            </el-form-item>
-            <el-form-item>
-              <el-link
-                @click="$router.push('/password')"
-                type="primary"
-                :underline="false"
-                style="margin: 0 auto"
-                >已有账号，忘记密码？</el-link
+                @click="onRegister"
+                >注册</el-button
               >
             </el-form-item>
           </el-form>
-          <!-- 验证码登录页表单 -->
         </div>
       </div>
-      <!-- 右侧表单页 -->
     </section>
   </div>
 </template>
-
 <style lang="scss" scoped>
+// 需要分左右两边布局，则用flex为类名的盒子套住
+
 .logincontent {
-  background: url('@/assets/images/bg.jpg') no-repeat center / contain;
+  background: url('@/assets/images/bg.jpg') no-repeat center / cover;
   height: 100%;
   width: 100%;
   /*把背景图片放大到适合元素容器的尺寸，图片比例不变*/
-  background-size: 100% 100%;
+  background-size: cover;
   position: absolute;
   left: 0;
   top: 0;

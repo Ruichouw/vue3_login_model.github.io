@@ -1,31 +1,35 @@
 // import { userGetInfoService } from '@/api/user'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { lambdaLoginAPI } from '@/api/user'
+import { lambdaCodeLoginAPI } from '@/api/user'
+
 export const useUserStore = defineStore(
   'User',
   () => {
-    const token = ref('')
-    const setToken = (newToken) => {
-      token.value = newToken
+    const userInfo = ref({})
+    // 密码登录
+    const LoginLam = async (data) => {
+      const res = await lambdaLoginAPI(data)
+      userInfo.value = res.data.data
+      
+      console.log(userInfo.value)
     }
-    const removeToken = () => {
-      token.value = ''
+    // 验证码登录
+    const LoginLamCode = async (data) => {
+      const res = await lambdaCodeLoginAPI(data)
+      userInfo.value = res.data.data
+
+      console.log(userInfo.value)
     }
-    const user = ref({})
-    const getUser = async () => {
-      const res = await userGetInfoService() // 请求获取数据
-      user.value = res.data.data
-    }
-    const setUser = (obj) => {
-      user.value = obj
+    const removeUserInfo = () => {
+      userInfo.value = {}
     }
     return {
-      token,
-      setToken,
-      removeToken,
-      user,
-      getUser,
-      setUser
+      userInfo,
+      LoginLam,
+      removeUserInfo,
+      LoginLamCode
     }
   },
   { persist: true }
